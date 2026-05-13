@@ -1,6 +1,7 @@
 """File list panel with drag-drop support for CSV files (tkinter)."""
 import os
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk, filedialog, messagebox
 
 from core.csv_parser import parse_maxwell_csv
@@ -37,6 +38,7 @@ class FileListPanel(ttk.LabelFrame):
         btn_frame.pack(fill=tk.X, pady=(4, 0))
 
         ttk.Button(btn_frame, text="Add Files", command=self._on_add).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Add Folder", command=self._on_add_folder).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="Remove", command=self._on_remove).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="Clear", command=self._on_clear).pack(side=tk.LEFT, padx=2)
 
@@ -45,11 +47,26 @@ class FileListPanel(ttk.LabelFrame):
             title="Open Maxwell CSV Files",
             filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")]
         )
+        self._add_paths(paths)
+
+    def _on_add_folder(self):
+        folder = filedialog.askdirectory(title="Select Folder Containing CSV Files")
+        if folder:
+            paths = []
+            for f in sorted(Path(folder).glob('*')):
+                if f.suffix.lower() == '.csv':
+                    paths.append(str(f))
+            self._add_paths(paths)
+
+    def _add_paths(self, paths):
+        """Add multiple paths, skipping duplicates."""
+        added = False
         for path in paths:
             if path not in self._filepaths:
                 self._filepaths.append(path)
                 self._add_item(path)
-        if paths and self._on_files_changed:
+                added = True
+        if added and self._on_files_changed:
             self._on_files_changed()
 
     def _on_remove(self):
